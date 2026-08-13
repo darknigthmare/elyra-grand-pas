@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generator": "OpenAI built-in image generation",
   "generatedAt": "2026-08-13",
-  "usage": "Original 32-bit pixel-art panoramic game backgrounds and walk-cycle sprite for Elyra - Chroniques du Grand Pas.",
+  "usage": "Original OpenAI-generated 32-bit pixel-art world panoramas, four-plane 4x4 route atlases and opaque four-frame walk-cycle for Elyra - Chroniques du Grand Pas.",
   "constraints": [
     "original fictional worlds",
     "no franchise characters or copied key art",
@@ -52,10 +52,52 @@
       "promptSummary": "Original celestial dream world, floating islands and sunrise cloud sea, luminous detailed 32-bit pixel-art panorama."
     },
     {
-      "path": "/assets/elyra-walk-cycle.webp",
-      "generationRef": "exec-09b1d5b8-12f3-46ce-ab3e-4705c9ce460b.png",
-      "sha256": "881FFFBE6546899E18EF603AFB6F1B37C7BE3AA06DFA43C7F6623F428B3CA1F1",
-      "promptSummary": "Identity-preserving four-frame right-facing walk cycle from the Elyra avatar, detailed 32-bit pixel art, with binary transparency and four poses recentered on 2026-08-13."
+      "path": "/worlds/layers/vallee-elyra-layers.webp",
+      "generationRef": "exec-adaa3895-f369-4fd7-b44a-921a6808bcae.png",
+      "sha256": "A5ACB5FA417CE14EF6203BDAF34969685E536BA1218671FACF1336A9394A7FE8",
+      "promptSummary": "Warm enchanted valley route: dawn forest, hamlet, stream, Grand Tree and amber mountain; coherent far, mid, terrain and near layer modules."
+    },
+    {
+      "path": "/worlds/layers/royaumes-couronne-layers.webp",
+      "generationRef": "exec-22dc64a1-ae26-4a35-a855-c38f43540a8b.png",
+      "sha256": "E47A0170864675E6B02F6A514167E8A456836ADDBE28172ADD2BCD4418E0212A",
+      "promptSummary": "Medieval-fantasy Crown route: citadel, mill, fortress, village, bridge, moor, runes, banners, gargoyle and brazier layer modules."
+    },
+    {
+      "path": "/worlds/layers/neo-arcadia-layers.webp",
+      "generationRef": "exec-eb69479c-a132-45ef-8000-d497f2062b86.png",
+      "sha256": "7FABE0BE9AB977869705DFFEF2411ABA09F6B5844D35B000E3936096D975BC3C",
+      "promptSummary": "Rainy cyberpunk Neo-Arcadia route: skyline, market, maglev, relay, alleys, catwalks, rooftops, conduits and street props."
+    },
+    {
+      "path": "/worlds/layers/noctis-hollow-layers.webp",
+      "generationRef": "exec-52ca33c3-a717-449e-aa3d-9195624e681f.png",
+      "sha256": "EF133BF4E469AF654EC3394BBC3C45E524976B9A34FC013BE46710A7E74A4235",
+      "promptSummary": "Gothic-horror Noctis route: marsh, old town, manor, cathedral, crypts, cemetery paths, lanterns, tombs and thorny foregrounds."
+    },
+    {
+      "path": "/worlds/layers/helios-9-layers.webp",
+      "generationRef": "exec-79b82510-611b-4289-ae34-c19f3de0f7c4.png",
+      "sha256": "7BD8C0FB5F2C6A8688F4FC662C912AF16DDB26251B77AE18B902BB11BC9CE330",
+      "promptSummary": "Science-fiction Helios-9 route: gas giant, colony, domes, elevator, observatory, regolith, crystals, rover and telescope layers."
+    },
+    {
+      "path": "/worlds/layers/xibalba-verte-layers.webp",
+      "generationRef": "exec-9b758ce8-6756-4852-9f6f-12511a730a66.png",
+      "sha256": "9F2A6A20FB0FB15AB5B90014CC84A749AECF78A6C26016D92FB510BB9E78CFD2",
+      "promptSummary": "Jungle-expedition Xibalba route: canopy, cenote, temple, roots, causeway, river ford, statues, pillars and ancient mechanisms."
+    },
+    {
+      "path": "/worlds/layers/aetheria-layers.webp",
+      "generationRef": "exec-fcbe8fc9-a493-4eff-8d06-026ed238bbe0.png",
+      "sha256": "61B06E7D0C45953DE2788B27C9E7F69C7DBE85314ED1886A13579543A1BCA0F4",
+      "promptSummary": "Celestial Aetheria route: cloud sea, floating islands, star whale, dawn gate, crystal paths, flowers, vines and luminous stones."
+    },
+    {
+      "path": "/assets/elyra-walk-cycle-v2.webp",
+      "generationRef": "exec-9c3344a6-9635-4ca7-803f-4a0d12abcbac.png",
+      "sha256": "C0D7E6F312EC6D05DE57F6A2AFEE1DACE1F1BF48B0862F2400016B68F251333B",
+      "promptSummary": "Identity-preserving four-pose right-facing Elyra walk cycle generated on green chroma, then packed with one solid opaque component per frame, no transparent cavities, aligned head and foot anchors."
     }
   ]
 }

@@ -5,7 +5,8 @@
 - Jeu public : [elyra-grand-pas.vercel.app](https://elyra-grand-pas.vercel.app)
 - Version ChatGPT Sites : [elyra-grand-pas.darknigthmare.chatgpt.site](https://elyra-grand-pas.darknigthmare.chatgpt.site)
 - Interface responsive pensée pour téléphone et installable comme PWA
-- Décors panoramiques animés, parallaxe, particules, cycle de marche et effets de vitesse
+- Vingt scènes par univers composées de quatre plans OpenAI (lointain, intermédiaire, terrain et premier plan)
+- Parallaxe et cycle de marche pilotés uniquement par les pas, avec premier plan pouvant masquer naturellement les jambes
 - Sept campagnes avec progression indépendante, paliers, quêtes et rencontres narratives
 - Atlas des mondes, journal de souvenirs, ressources et refuge interdimensionnel
 - Sauvegarde V2 locale avec migration automatique de la première aventure
@@ -23,7 +24,7 @@
 | Xibalba Verte | Aventure archéologique | Jungle profonde, temples perdus et mécanismes oubliés |
 | Ætheria | Rêve céleste | Îles flottantes, mers de nuages et porte de l’aube |
 
-Chaque univers possède son illustration originale, sa palette, sa route, ses paliers, une quête quotidienne et deux rencontres. Les seuils d’ouverture reposent sur le total de pas, tandis que la progression de chaque route reste propre au monde choisi.
+Chaque univers possède son illustration originale, un atlas de quatre plans, vingt compositions de route, sa palette, ses paliers, une quête quotidienne et deux rencontres. Les seuils d’ouverture reposent sur le total de pas, tandis que la progression de chaque route reste propre au monde choisi.
 
 ## Lancer le projet
 
@@ -45,15 +46,17 @@ npm test
 npm audit --omit=dev
 ```
 
-`npm test` valide le moteur de progression, produit le build Next.js puis démarre ce build pour contrôler le HTML, le manifeste, la carte sociale et les sept décors WebP. Le build principal cible Vercel. La compatibilité ChatGPT Sites est conservée avec `npm run dev:sites` et `npm run build:sites`.
+`npm test` valide le moteur de progression, les vingt compositions et leurs fenêtres de rendu, puis contrôle au pixel près l’alpha du personnage et des sept atlas. Il produit ensuite le build Next.js et vérifie le HTML, le manifeste, la carte sociale et toutes les ressources WebP. Le build principal cible Vercel. La compatibilité ChatGPT Sites est conservée avec `npm run dev:sites` et `npm run build:sites`.
 
 ## Architecture du jeu
 
 - `app/gameData.ts` décrit les univers, quêtes, paliers et rencontres.
 - `app/gameEngine.ts` gère la sauvegarde, les pas, les déblocages et les récompenses.
 - `app/GrandPasGameV2.tsx` porte les écrans Voyage, Mondes, Journal et Refuge.
-- `public/worlds/` contient les sept panoramas optimisés en WebP.
-- `tests/game-engine.test.ts` protège les règles de progression et de migration.
+- `app/worldVisualData.ts` construit vingt scènes narratives par univers et leur caméra déterministe liée aux pas.
+- `public/worlds/` contient les panoramas et sept atlas OpenAI à quatre plans optimisés en WebP.
+- `scripts/validate-visual-assets.mjs` refuse les trous d’alpha, résidus chroma, mauvaises dimensions ou hashes divergents.
+- `tests/game-engine.test.ts` et `tests/world-visual.test.ts` protègent la progression, la migration et la continuité visuelle.
 
 ## Podomètre et confidentialité
 

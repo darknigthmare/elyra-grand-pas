@@ -31,8 +31,10 @@ import {
 import {
   VISUAL_PLANES,
   WORLD_ROUTE_SEGMENT_COUNT,
+  getLocalParallaxPx,
+  getRouteRenderSegments,
   getRouteSceneState,
-  getWorldRouteSegments,
+  getWorldLayerAtlasPath,
   type VisualPlane,
   type VisualSegment,
 } from "./worldVisualData";
@@ -275,42 +277,43 @@ type VoyageProps = {
   save: GameSave; activeUniverse: (typeof UNIVERSES)[number]; worldProgress: GameSave["worldProgress"][UniverseId]; routeProgress: number; dailyProgress: number; movementSequence: number; isWalking: boolean; sensorMode: SensorMode; nextEvent: (typeof UNIVERSES)[number]["encounters"][number] | undefined; remaining: number; nextLockedUniverse: (typeof UNIVERSES)[number] | undefined; setAtlasOpen: (value: boolean) => void; setTab: (tab: Tab) => void; startWalking: () => void; useDemo: () => void;
 };
 
-const RouteLayer = memo(function RouteLayer({ plane, segments, image }: { plane: VisualPlane; segments: readonly VisualSegment[]; image: string }) {
-  return <div className={`world-layer world-layer-${plane}`} aria-hidden="true"><div className="world-layer-track">
+const RouteLayer = memo(function RouteLayer({ plane, segments, atlas, cameraSegments, renderWindowStart, foregroundOnly = false }: {
+  plane: VisualPlane;
+  segments: readonly VisualSegment[];
+  atlas: string;
+  cameraSegments: number;
+  renderWindowStart: number;
+  foregroundOnly?: boolean;
+}) {
+  const layerClassName = foregroundOnly ? "world-layer world-layer-near-front" : `world-layer world-layer-${plane}`;
+  return <div className={layerClassName} aria-hidden="true"><div className="world-layer-track" data-render-window-start={renderWindowStart} key={`${plane}-${foregroundOnly ? "front" : "back"}-${renderWindowStart}`}>
     {segments.map((segment) => {
+      const layer = segment.layers[plane];
       const segmentStyle = {
-        "--segment-crop": `${segment.cropX}%`,
-        "--segment-flip": segment.mirrored ? -1 : 1,
-        "--segment-tone": `${(segment.seed % 13) - 6}deg`,
-        "--layer-variant": segment.layers[plane].variant,
+        "--atlas-x": `${layer.atlasXPercent}%`,
+        "--atlas-y": `${layer.atlasYPercent}%`,
+        "--layer-variant": layer.variant,
+        "--cell-parallax-x": `${getLocalParallaxPx(plane, cameraSegments, segment.index)}px`,
       } as React.CSSProperties;
-      return <div className={`world-segment variant-${segment.layers[plane].variant} landform-${segment.landform}`} data-segment-id={segment.id} key={`${plane}-${segment.id}`} style={segmentStyle}>
-        <div className="segment-surface" style={plane === "far" ? { backgroundImage: `url(${image})` } : undefined} />
-        {plane === "mid" && segment.landmark ? <span className="landmark-glow" /> : null}
-        {plane === "terrain" ? <span className="seam-ground" data-join={segment.exitJoin.key} /> : null}
-        {plane === "near" ? <><span className={`route-prop join-prop prop-${segment.exitJoin.prop}`} data-join={segment.exitJoin.key} /><span className={`route-prop secondary-prop prop-${segment.secondaryProp}`} /></> : null}
+      return <div className={`world-segment variant-${layer.variant} landform-${segment.landform}`} data-landmark={segment.landmark || undefined} data-segment-id={segment.id} key={`${plane}-${segment.id}`} style={segmentStyle}>
+        <div className={`segment-surface ${foregroundOnly ? "near-front-surface" : ""}`} style={{ backgroundImage: `url(${atlas})` }} />
       </div>;
     })}
   </div></div>;
 });
 
 function WorldViewport({ activeUniverse, steps, stepsToday, movementSequence, isTracking }: { activeUniverse: (typeof UNIVERSES)[number]; steps: number; stepsToday: number; movementSequence: number; isTracking: boolean }) {
-  const segments = getWorldRouteSegments(activeUniverse.id);
+  const layerAtlas = getWorldLayerAtlasPath(activeUniverse.id);
   const scene = getRouteSceneState(activeUniverse.id, steps, activeUniverse.routeGoal);
+  const renderSegments = getRouteRenderSegments(activeUniverse.id, scene);
   const frame = Math.abs(Math.floor(steps)) % 4;
   const viewportStyle = {
-    "--far-track-shift": `${scene.trackPercent * 0.18}%`,
-    "--mid-track-shift": `${scene.trackPercent * 0.4}%`,
-    "--terrain-track-shift": `${scene.trackPercent * 0.72}%`,
-    "--near-track-shift": `${scene.trackPercent}%`,
-    "--far-parallax": `${scene.parallaxPx.far}px`,
-    "--mid-parallax": `${scene.parallaxPx.mid}px`,
-    "--terrain-parallax": `${scene.parallaxPx.terrain}px`,
-    "--near-parallax": `${scene.parallaxPx.near}px`,
+    "--track-shift": `${scene.renderTrackPercent}%`,
     "--walker-frame": `${frame * (100 / 3)}%`,
   } as React.CSSProperties;
   return <div className={`pixel-world ambient-${activeUniverse.ambient} ${isTracking ? "is-tracking" : ""}`} data-route-segment={scene.segmentIndex + 1} data-route-segments={WORLD_ROUTE_SEGMENT_COUNT} data-step-sequence={movementSequence} style={viewportStyle}>
-    {VISUAL_PLANES.map((plane) => <RouteLayer image={activeUniverse.image} key={plane} plane={plane} segments={segments} />)}
+    {VISUAL_PLANES.map((plane) => <RouteLayer atlas={layerAtlas} cameraSegments={scene.cameraSegments} key={plane} plane={plane} renderWindowStart={scene.renderWindowStart} segments={renderSegments} />)}
+    <RouteLayer atlas={layerAtlas} cameraSegments={scene.cameraSegments} foregroundOnly key="near-front" plane="near" renderWindowStart={scene.renderWindowStart} segments={renderSegments} />
     <div className="world-grade" />
     <div className="world-particles" aria-hidden="true">{Array.from({ length: 12 }, (_, index) => <i key={index} />)}</div>
     <div className={`speed-lines ${movementSequence > 0 ? "step-impulse" : ""}`} key={`speed-${movementSequence}`} />

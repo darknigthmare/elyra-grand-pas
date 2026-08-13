@@ -44,7 +44,7 @@ test("production server renders the Elyra multi-world game shell", async () => {
   assert.doesNotMatch(html, /codex-preview|Building your site|react-loading-skeleton/i);
 });
 
-test("serves the V2 mobile manifest, social card and seven world artworks", async () => {
+test("serves the V2 manifest, social card, world art, layer atlases and opaque sprite", async () => {
   const worldAssets = [
     "vallee-elyra.webp",
     "royaumes-couronne.webp",
@@ -54,11 +54,16 @@ test("serves the V2 mobile manifest, social card and seven world artworks", asyn
     "xibalba-verte.webp",
     "aetheria.webp",
   ];
-  const [manifestResponse, imageResponse, ...worldResponses] = await Promise.all([
+  const layerAssets = worldAssets.map((asset) => `layers/${asset.replace(".webp", "-layers.webp")}`);
+  const [manifestResponse, imageResponse, spriteResponse, ...artResponses] = await Promise.all([
     fetch(`${baseUrl}/manifest.webmanifest`),
     fetch(`${baseUrl}/og.png`),
+    fetch(`${baseUrl}/assets/elyra-walk-cycle-v2.webp`),
     ...worldAssets.map((asset) => fetch(`${baseUrl}/worlds/${asset}`)),
+    ...layerAssets.map((asset) => fetch(`${baseUrl}/worlds/${asset}`)),
   ]);
+  const worldResponses = artResponses.slice(0, worldAssets.length);
+  const layerResponses = artResponses.slice(worldAssets.length);
 
   assert.equal(manifestResponse.status, 200);
   assert.match(manifestResponse.headers.get("content-type") ?? "", /application\/manifest\+json/i);
@@ -70,6 +75,9 @@ test("serves the V2 mobile manifest, social card and seven world artworks", asyn
   assert.equal(imageResponse.status, 200);
   assert.match(imageResponse.headers.get("content-type") ?? "", /^image\/png/i);
 
+  assert.equal(spriteResponse.status, 200);
+  assert.match(spriteResponse.headers.get("content-type") ?? "", /^image\/webp/i);
+
   assert.equal(worldResponses.length, 7);
   for (const [index, response] of worldResponses.entries()) {
     assert.equal(response.status, 200, `${worldAssets[index]} should be served`);
@@ -78,5 +86,11 @@ test("serves the V2 mobile manifest, social card and seven world artworks", asyn
       /^image\/webp/i,
       `${worldAssets[index]} should use the WebP MIME type`,
     );
+  }
+
+  assert.equal(layerResponses.length, 7);
+  for (const [index, response] of layerResponses.entries()) {
+    assert.equal(response.status, 200, `${layerAssets[index]} should be served`);
+    assert.match(response.headers.get("content-type") ?? "", /^image\/webp/i);
   }
 });

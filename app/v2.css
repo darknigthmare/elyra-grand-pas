@@ -326,7 +326,7 @@
   height: 210px;
   bottom: 20px;
   left: clamp(25px, calc(var(--route-position, 45%) - 49px), 284px);
-  background: url("/assets/elyra-walk-cycle.webp") 0 0 / 400% 100% no-repeat;
+  background: url("/assets/elyra-walk-cycle-v2.webp") 0 0 / 400% 100% no-repeat;
   image-rendering: pixelated;
   filter: drop-shadow(0 8px 3px rgba(2,8,11,.48)) saturate(1.08);
   transform-origin: center bottom;
@@ -397,41 +397,27 @@
 .world-layer-far { z-index: 0; }
 .world-layer-mid { z-index: 1; }
 .world-layer-terrain { z-index: 2; }
-.world-layer-near { z-index: 10; }
+.world-layer-near { z-index: 7; }
+.world-layer-near-front { z-index: 9; }
 
 .world-layer-track {
   position: absolute;
   inset: 0 auto 0 0;
   display: flex;
-  width: 2000%;
+  width: 300%;
   height: 100%;
-  transition: transform .38s cubic-bezier(.2, .72, .22, 1);
+  transform: translate3d(var(--track-shift, 0%), 0, 0);
+  transition: transform .34s cubic-bezier(.2, .72, .22, 1);
+}
+
+.pixel-world[data-step-sequence]:not([data-step-sequence="0"]) .world-layer-track {
   will-change: transform;
-}
-
-.world-layer-far .world-layer-track {
-  transform: translate3d(calc(var(--far-track-shift, var(--track-shift, 0%)) + var(--far-parallax, 0px)), 0, 0);
-}
-
-.world-layer-mid .world-layer-track {
-  transform: translate3d(calc(var(--mid-track-shift, var(--track-shift, 0%)) + var(--mid-parallax, 0px)), 0, 0);
-  transition-duration: .36s;
-}
-
-.world-layer-terrain .world-layer-track {
-  transform: translate3d(calc(var(--terrain-track-shift, var(--track-shift, 0%)) + var(--terrain-parallax, 0px)), 0, 0);
-  transition-duration: .34s;
-}
-
-.world-layer-near .world-layer-track {
-  transform: translate3d(calc(var(--near-track-shift, var(--track-shift, 0%)) + var(--near-parallax, 0px)), 0, 0);
-  transition-duration: .3s;
 }
 
 .world-segment {
   position: relative;
-  flex: 0 0 5%;
-  width: 5%;
+  flex: 0 0 calc(100% / 3);
+  width: calc(100% / 3);
   height: 100%;
   overflow: visible;
 }
@@ -439,16 +425,34 @@
 .segment-surface {
   position: absolute;
   pointer-events: none;
+  background-repeat: no-repeat;
+  background-size: 400% 400%;
+  background-position: var(--atlas-x, 0%) var(--atlas-y, 0%);
+  image-rendering: pixelated;
+  transform: translate3d(var(--cell-parallax-x, 0px), 0, 0) scale(var(--cell-scale, 1));
+  transform-origin: center;
 }
 
 .world-layer-far .segment-surface {
-  inset: -2px -5px;
-  background-position: var(--segment-crop, 50%) center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  filter: hue-rotate(var(--segment-tone, 0deg)) saturate(.94) contrast(1.04);
-  transform: scaleX(var(--segment-flip, 1)) scale(1.045);
-  transform-origin: center;
+  --cell-scale: 1.045;
+  inset: -2px -14px;
+  filter: saturate(.98) contrast(1.03);
+}
+
+.world-layer-mid .segment-surface,
+.world-layer-terrain .segment-surface,
+.world-layer-near .segment-surface {
+  inset-inline: -14px;
+}
+
+.world-layer-near .segment-surface {
+  opacity: .72;
+}
+
+.world-layer-near-front .segment-surface {
+  inset: -2px -14px;
+  clip-path: inset(62% 0 0);
+  filter: saturate(1.08) brightness(.68);
 }
 
 .world-layer-far .segment-surface::before {
@@ -474,38 +478,11 @@
 }
 
 .world-layer-mid .segment-surface {
-  height: 62%;
-  right: -28px;
-  bottom: 34px;
-  left: -28px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--world-accent-soft) 15%, transparent), transparent 16%),
-    linear-gradient(180deg, color-mix(in srgb, var(--world-ink) 50%, #769292), color-mix(in srgb, var(--world-ink) 82%, #1a343a));
-  clip-path: polygon(0 77%, 7% 62%, 15% 68%, 24% 35%, 33% 55%, 42% 20%, 51% 48%, 61% 28%, 70% 59%, 79% 31%, 89% 65%, 100% 43%, 100% 100%, 0 100%);
-  opacity: .72;
+  inset: -2px -14px;
+  filter: saturate(.92) brightness(.78);
+  opacity: .9;
 }
 
-.world-layer-mid .variant-1 .segment-surface {
-  clip-path: polygon(0 62%, 10% 43%, 19% 59%, 29% 25%, 39% 54%, 49% 36%, 58% 65%, 68% 29%, 78% 48%, 89% 18%, 100% 56%, 100% 100%, 0 100%);
-  transform: translateY(7px);
-}
-
-.world-layer-mid .variant-2 .segment-surface {
-  clip-path: polygon(0 71%, 9% 52%, 20% 57%, 31% 40%, 42% 63%, 53% 24%, 64% 53%, 75% 44%, 87% 66%, 100% 35%, 100% 100%, 0 100%);
-  transform: translateY(-4px);
-}
-
-.world-layer-mid .variant-3 .segment-surface {
-  clip-path: polygon(0 49%, 12% 35%, 23% 68%, 34% 43%, 45% 58%, 56% 23%, 68% 61%, 79% 39%, 90% 55%, 100% 27%, 100% 100%, 0 100%);
-  opacity: .64;
-}
-
-.world-layer-mid .segment-surface::after {
-  position: absolute;
-  inset: 54% -8% 0;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--world-accent) 16%, transparent));
-  content: "";
-}
 
 .landmark-glow {
   position: absolute;
@@ -529,35 +506,10 @@
 }
 
 .world-layer-terrain .segment-surface {
-  height: 126px;
-  right: -34px;
-  bottom: -4px;
-  left: -34px;
-  background:
-    radial-gradient(ellipse at 52% 19%, color-mix(in srgb, var(--world-accent-soft) 28%, #c4b483) 0 13%, transparent 14%),
-    linear-gradient(168deg, transparent 0 23%, color-mix(in srgb, var(--world-ink) 40%, #887a58) 24% 30%, color-mix(in srgb, var(--world-ink) 74%, #263b32) 31% 100%);
-  clip-path: polygon(0 39%, 8% 33%, 18% 39%, 30% 29%, 42% 37%, 53% 25%, 66% 35%, 78% 26%, 89% 35%, 100% 27%, 100% 100%, 0 100%);
-  filter: hue-rotate(var(--segment-tone, 0deg));
+  inset: -2px -14px;
+  filter: saturate(.96) brightness(.9);
 }
 
-.world-layer-terrain .variant-1 .segment-surface { transform: translateY(8px); }
-.world-layer-terrain .variant-2 .segment-surface { transform: translateY(-4px); }
-.world-layer-terrain .variant-3 .segment-surface { transform: translateY(4px) scaleY(1.08); }
-
-.world-layer-terrain .segment-surface::after {
-  position: absolute;
-  width: 56%;
-  height: 54%;
-  left: 22%;
-  bottom: -12%;
-  border: 3px solid color-mix(in srgb, var(--world-accent-soft) 46%, #978463);
-  border-block: 0;
-  border-radius: 50%;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--world-accent-soft) 14%, transparent), transparent);
-  content: "";
-  opacity: .58;
-  transform: perspective(70px) rotateX(54deg);
-}
 
 .seam-ground {
   position: absolute;
@@ -573,21 +525,11 @@
 }
 
 .world-layer-near .segment-surface {
-  height: 92px;
-  right: -42px;
-  bottom: -28px;
-  left: -42px;
-  background:
-    radial-gradient(ellipse at 8% 76%, color-mix(in srgb, var(--world-ink) 94%, #071410) 0 18%, transparent 20%),
-    radial-gradient(ellipse at 37% 83%, color-mix(in srgb, var(--world-ink) 84%, #14271d) 0 20%, transparent 22%),
-    radial-gradient(ellipse at 72% 73%, color-mix(in srgb, var(--world-ink) 92%, #091612) 0 22%, transparent 24%),
-    linear-gradient(transparent 48%, color-mix(in srgb, var(--world-ink) 88%, #07130f));
-  opacity: .82;
+  inset: -2px -14px;
+  filter: saturate(1.06) brightness(.72);
+  opacity: .88;
 }
 
-.world-layer-near .variant-1 .segment-surface { transform: translateY(8px) scaleX(1.03); }
-.world-layer-near .variant-2 .segment-surface { transform: translateY(-5px) scaleX(1.04); }
-.world-layer-near .variant-3 .segment-surface { opacity: .68; transform: translateY(3px) scaleX(1.07); }
 
 .route-prop {
   position: absolute;
@@ -725,7 +667,8 @@
 }
 
 .pixel-world .walker-sprite {
-  z-index: 9;
+  z-index: 8;
+  background-image: url("/assets/elyra-walk-cycle-v2.webp");
   background-position: var(--walker-frame, 0%) 0;
   transition: left .3s cubic-bezier(.2, .72, .22, 1);
   animation: none;
@@ -784,7 +727,6 @@
   .route-prop { transform: scale(.86); }
   .secondary-prop { transform: scale(.52); }
   .segment-indicator { top: 9px; left: 9px; padding: 5px 7px; font-size: 7px; }
-  .world-layer-mid .segment-surface { height: 58%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
