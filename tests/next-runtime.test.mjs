@@ -26,32 +26,57 @@ test.after(async () => {
   await application.close();
 });
 
-test("production server renders the Elyra game shell", async () => {
+test("production server renders the Elyra multi-world game shell", async () => {
   const response = await fetch(baseUrl);
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Élyra — Le monde avance avec vous<\/title>/i);
-  assert.match(html, /Le monde avance avec vous/);
-  assert.match(html, /Sentier des Lucioles/);
+  assert.match(html, /<title>Élyra — Chroniques du Grand Pas<\/title>/i);
+  assert.match(html, /Sept mondes/);
+  assert.match(html, /Un seul voyage/);
+  assert.match(html, /Vallée d’Élyra/);
   assert.match(html, /Commencer à marcher/);
-  assert.match(html, /Navigation principale/);
+  assert.match(html, /Voyage/);
+  assert.match(html, /Mondes/);
+  assert.match(html, /Journal/);
+  assert.match(html, /Refuge/);
   assert.doesNotMatch(html, /codex-preview|Building your site|react-loading-skeleton/i);
 });
 
-test("serves the mobile manifest and social card", async () => {
-  const [manifestResponse, imageResponse] = await Promise.all([
+test("serves the V2 mobile manifest, social card and seven world artworks", async () => {
+  const worldAssets = [
+    "vallee-elyra.webp",
+    "royaumes-couronne.webp",
+    "neo-arcadia.webp",
+    "noctis-hollow.webp",
+    "helios-9.webp",
+    "xibalba-verte.webp",
+    "aetheria.webp",
+  ];
+  const [manifestResponse, imageResponse, ...worldResponses] = await Promise.all([
     fetch(`${baseUrl}/manifest.webmanifest`),
     fetch(`${baseUrl}/og.png`),
+    ...worldAssets.map((asset) => fetch(`${baseUrl}/worlds/${asset}`)),
   ]);
 
   assert.equal(manifestResponse.status, 200);
   assert.match(manifestResponse.headers.get("content-type") ?? "", /application\/manifest\+json/i);
   const manifest = await manifestResponse.json();
   assert.equal(manifest.short_name, "Élyra");
+  assert.equal(manifest.name, "Élyra — Chroniques du Grand Pas");
   assert.equal(manifest.display, "standalone");
 
   assert.equal(imageResponse.status, 200);
   assert.match(imageResponse.headers.get("content-type") ?? "", /^image\/png/i);
+
+  assert.equal(worldResponses.length, 7);
+  for (const [index, response] of worldResponses.entries()) {
+    assert.equal(response.status, 200, `${worldAssets[index]} should be served`);
+    assert.match(
+      response.headers.get("content-type") ?? "",
+      /^image\/webp/i,
+      `${worldAssets[index]} should use the WebP MIME type`,
+    );
+  }
 });

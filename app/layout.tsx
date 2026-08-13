@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./v2.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Élyra — Aventure de marche pixel-art",
+  title: "Élyra — Chroniques du Grand Pas",
   description:
-    "Marchez dans la vraie vie, explorez Élyra et faites grandir un monde bienveillant.",
+    "Une aventure de marche pixel-art à travers sept univers vivants.",
   applicationName: "Élyra",
   icons: {
     icon: "/favicon.svg",
@@ -26,9 +27,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#17251f",
+  themeColor: "#08111f",
 };
 
 export default function RootLayout({

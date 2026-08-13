@@ -1,6 +1,6 @@
 {
   "name": "elyra-grand-pas",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "engines": {
     "node": "24.x"
@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "npm run build && node --test tests/next-runtime.test.mjs",
+    "test": "npm run test:engine && npm run build && node --test tests/next-runtime.test.mjs",
+    "test:engine": "tsx --test tests/game-engine.test.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "dev:sites": "vinext dev",
@@ -39,6 +40,7 @@
     "globals": "16.4.0",
     "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",
+    "tsx": "^4.23.12",
     "typescript": "5.9.3",
     "typescript-eslint": "8.59.3",
     "vinext": "1.0.0-beta.2",

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "generator": "OpenAI built-in image generation",
+  "generatedAt": "2026-08-13",
+  "usage": "Original 32-bit pixel-art panoramic game backgrounds and walk-cycle sprite for Elyra - Chroniques du Grand Pas.",
+  "constraints": [
+    "original fictional worlds",
+    "no franchise characters or copied key art",
+    "no text, logo or watermark"
+  ],
+  "assets": [
+    {
+      "path": "/worlds/vallee-elyra.webp",
+      "generationRef": "exec-091934f0-358e-4612-ab67-bdb9febbd5ae.png",
+      "sha256": "919AECE010DC857711D4B46E2F5D097E1B10E7D79B1D1B1A7A0906079C8EF124",
+      "promptSummary": "Enchanted valley, luminous forest path, warm dawn, detailed original 32-bit pixel art, layered mobile-game panorama."
+    },
+    {
+      "path": "/worlds/royaumes-couronne.webp",
+      "generationRef": "exec-2b85de61-34fb-4c49-92cb-83dfef04f6cd.png",
+      "sha256": "EE3EEDD8F4772F9D90EEFC06E2110A9FB26BFF76479057C2FF12A31139F34629",
+      "promptSummary": "Original medieval-fantasy royal road, fortified citadel and mountains, richly layered 32-bit pixel-art panorama."
+    },
+    {
+      "path": "/worlds/neo-arcadia.webp",
+      "generationRef": "exec-65dda928-b73a-40ce-9679-ad855f57cfae.png",
+      "sha256": "7BBF6B578BE7C953563C1F65A24E1387F368451B042111BCD50B04C617F5A66E",
+      "promptSummary": "Original rainy cyberpunk megacity, neon alleys and vertical skyline, detailed 32-bit pixel-art game panorama."
+    },
+    {
+      "path": "/worlds/noctis-hollow.webp",
+      "generationRef": "exec-8e17a64c-e567-4e4e-bc4f-e077449a0a25.png",
+      "sha256": "E4CF380923587B05F3D7A999DB021933D2586E28999560B6F2547726C2369A14",
+      "promptSummary": "Original gothic-horror marsh and distant manor, moonlit fog, atmospheric detailed 32-bit pixel-art panorama."
+    },
+    {
+      "path": "/worlds/helios-9.webp",
+      "generationRef": "exec-e6f8ac91-e1fe-4e63-b360-4ac765bf1ad3.png",
+      "sha256": "F3B685A1F88A456CFC8C1EBA0A718E6B3286F5BCC956CF90DE58FCE03A845C97",
+      "promptSummary": "Original science-fiction exoplanet outpost, orbital domes and alien desert, cinematic 32-bit pixel-art panorama."
+    },
+    {
+      "path": "/worlds/xibalba-verte.webp",
+      "generationRef": "exec-102ffa47-300a-41cf-b5ad-db70c6616b65.png",
+      "sha256": "01B8AAAC1AD52DDA44F27FF9D27BF56E896144350CE294F7776D094BFF4219E0",
+      "promptSummary": "Original fictional jungle ruins and forgotten mechanisms, lush layered 32-bit pixel-art expedition panorama."
+    },
+    {
+      "path": "/worlds/aetheria.webp",
+      "generationRef": "exec-c203de9d-64bc-4791-94fb-4e48cebed0d3.png",
+      "sha256": "A32C5EF217F44F6A917185912C86110C8901F94C82401CCD3966F27E3598068C",
+      "promptSummary": "Original celestial dream world, floating islands and sunrise cloud sea, luminous detailed 32-bit pixel-art panorama."
+    },
+    {
+      "path": "/assets/elyra-walk-cycle.webp",
+      "generationRef": "exec-09b1d5b8-12f3-46ce-ab3e-4705c9ce460b.png",
+      "sha256": "7FD8B86D6E7661E026B71846EFF854A62171CA634FB663ADE5E8BAC2D2B30DEC",
+      "promptSummary": "Identity-preserving four-frame right-facing walk cycle from the Elyra avatar, detailed 32-bit pixel art, chroma-key removed locally."
+    }
+  ]
+}
