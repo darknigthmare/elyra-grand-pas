@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { UNIVERSE_BY_ID, UNIVERSES, type UniverseId } from "./gameData";
 import {
   DAILY_GOAL,
@@ -20,6 +20,23 @@ import {
   unlockedCount,
   type GameSave,
 } from "./gameEngine";
+import {
+  acceptStepDelta,
+  createStepMotionState,
+  createStepRuntimeState,
+  detectStep,
+  resetStepMotionState,
+  type StepSource,
+} from "./stepMotion";
+import {
+  VISUAL_PLANES,
+  WORLD_ROUTE_SEGMENT_COUNT,
+  getRouteSceneState,
+  getWorldRouteSegments,
+  type VisualPlane,
+  type VisualSegment,
+} from "./worldVisualData";
+
 
 type Tab = "voyage" | "mondes" | "journal" | "refuge";
 type SensorMode = "idle" | "motion" | "demo";
@@ -73,9 +90,10 @@ export function GrandPasGameV2() {
   const [atlasOpen, setAtlasOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [greeting, setGreeting] = useState("Bienvenue, voyageur");
+  const [movementSequence, setMovementSequence] = useState(0);
   const [encountersPaused, setEncountersPaused] = useState(false);
-  const lastPeak = useRef(0);
-  const wasAbove = useRef(false);
+  const motionState = useRef(createStepMotionState());
+  const stepRuntime = useRef(createStepRuntimeState());
   const previousPendingCount = useRef(0);
 
   useEffect(() => {
@@ -121,46 +139,62 @@ export function GrandPasGameV2() {
     previousPendingCount.current = save.pendingEncounters.length;
   }, [save.pendingEncounters.length]);
 
-  const addSteps = useCallback((amount: number) => {
-    setSave((current) => addStepsToSave(current, amount));
+  const acceptSteps = useCallback((amount: number, source: StepSource) => {
+    const result = acceptStepDelta(stepRuntime.current, { source, delta: amount, observedAt: Date.now() });
+    if (result.acceptedDelta === 0) return;
+    stepRuntime.current = result.state;
+    setMovementSequence(result.state.movementSequence);
+    setSave((current) => addStepsToSave(current, result.acceptedDelta));
   }, []);
 
   useEffect(() => {
     if (!isWalking || sensorMode !== "demo") return;
-    const interval = window.setInterval(() => addSteps(3), 560);
+    const interval = window.setInterval(() => acceptSteps(3, "demo"), 560);
     return () => window.clearInterval(interval);
-  }, [addSteps, isWalking, sensorMode]);
+  }, [acceptSteps, isWalking, sensorMode]);
 
   useEffect(() => {
     if (!isWalking || sensorMode !== "motion") return;
+    motionState.current = resetStepMotionState();
     const onMotion = (event: DeviceMotionEvent) => {
       const a = event.accelerationIncludingGravity;
-      if (!a || a.x == null || a.y == null || a.z == null) return;
-      const deviation = Math.abs(Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z) - 9.81);
-      const now = Date.now();
-      const above = deviation > 1.35;
-      if (above && !wasAbove.current && now - lastPeak.current > 300) { lastPeak.current = now; addSteps(1); }
-      wasAbove.current = above;
+      if (!a) return;
+      const result = detectStep(motionState.current, { x: a.x, y: a.y, z: a.z, observedAt: Date.now() });
+      motionState.current = result.state;
+      if (result.accepted) acceptSteps(1, "motion");
     };
     window.addEventListener("devicemotion", onMotion);
-    return () => window.removeEventListener("devicemotion", onMotion);
-  }, [addSteps, isWalking, sensorMode]);
+    return () => {
+      window.removeEventListener("devicemotion", onMotion);
+      motionState.current = resetStepMotionState();
+    };
+  }, [acceptSteps, isWalking, sensorMode]);
 
   async function startWalking() {
-    if (isWalking) { setIsWalking(false); setToast("Promenade mise en pause · vos pas sont sauvegardés."); return; }
+    if (isWalking) {
+      setIsWalking(false);
+      motionState.current = resetStepMotionState();
+      setToast("Promenade mise en pause · le monde reste exactement à votre dernier pas.");
+      return;
+    }
     const motionEvent = typeof window !== "undefined" ? window.DeviceMotionEvent : undefined;
     if (motionEvent) {
       const permissionTarget = motionEvent as typeof DeviceMotionEvent & { requestPermission?: () => Promise<PermissionState> };
       if (typeof permissionTarget.requestPermission === "function") {
         try {
-          if ((await permissionTarget.requestPermission()) === "granted") { setSensorMode("motion"); setIsWalking(true); setToast("Capteur activé · gardez cette version web ouverte."); return; }
+          if ((await permissionTarget.requestPermission()) === "granted") { setSensorMode("motion"); setIsWalking(true); setToast("Capteur activé · le décor attend votre prochain pas."); return; }
         } catch { /* Permission denied: discovery mode remains available. */ }
-      } else { setSensorMode("motion"); setIsWalking(true); setToast("Détection de mouvement active au premier plan."); return; }
+      } else { setSensorMode("motion"); setIsWalking(true); setToast("Détection active · le décor attend votre prochain pas."); return; }
     }
-    setSensorMode("demo"); setIsWalking(true); setToast("Mode découverte · les pas sont simulés pour parcourir les mondes.");
+    setSensorMode("idle");
+    setIsWalking(false);
+    setToast("Capteur indisponible · utilisez le mode découverte séparé pour tester le voyage.");
   }
 
-  function useDemo() { setSensorMode("demo"); setIsWalking(true); setToast("Mode découverte activé · progression simulée."); }
+  function useDemo() {
+    motionState.current = resetStepMotionState();
+    setSensorMode("demo"); setIsWalking(true); setToast("Mode découverte activé · seuls les pas simulés font avancer le monde.");
+  }
   function chooseUniverse(universeId: UniverseId) {
     if (!isUniverseUnlocked(save, universeId)) { setToast(`Ce monde s’ouvre à ${formatSteps(UNIVERSE_BY_ID[universeId].unlockAt)} pas cumulés.`); return; }
     setSave((current) => selectUniverse(current, universeId)); setTab("voyage"); setAtlasOpen(false); setToast(`${UNIVERSE_BY_ID[universeId].name} · expédition sélectionnée.`);
@@ -193,6 +227,9 @@ export function GrandPasGameV2() {
     if (!window.confirm("Réinitialiser toute l’aventure, les ressources et les améliorations du refuge ? Cette action est définitive.")) return;
     setIsWalking(false);
     setSensorMode("idle");
+    motionState.current = resetStepMotionState();
+    stepRuntime.current = createStepRuntimeState();
+    setMovementSequence(0);
     setSave(createDefaultSave(localDateKey()));
     setRefugeProgress(DEFAULT_REFUGE);
     setEncountersPaused(false);
@@ -217,7 +254,7 @@ export function GrandPasGameV2() {
         <div className="resources" role="group" aria-label="Ressources disponibles"><span className="resource leaf"><Icon name="leaf" /> {save.leaves}<span className="resource-name">feuilles</span></span><span className="resource spark"><Icon name="spark" /> {save.sparks}<span className="resource-name">éclats</span></span><button className="round-button" aria-label="Ouvrir les réglages" onClick={() => setMenuOpen(true)}>☰</button></div>
       </header>
 
-      {tab === "voyage" && <VoyageScreen save={save} activeUniverse={activeUniverse} worldProgress={worldProgress} routeProgress={routeProgress} dailyProgress={dailyProgress} isWalking={isWalking} sensorMode={sensorMode} nextEvent={nextEvent} remaining={remaining} nextLockedUniverse={nextLockedUniverse} setAtlasOpen={setAtlasOpen} setTab={setTab} startWalking={startWalking} useDemo={useDemo} />}
+      {tab === "voyage" && <VoyageScreen save={save} activeUniverse={activeUniverse} worldProgress={worldProgress} routeProgress={routeProgress} dailyProgress={dailyProgress} movementSequence={movementSequence} isWalking={isWalking} sensorMode={sensorMode} nextEvent={nextEvent} remaining={remaining} nextLockedUniverse={nextLockedUniverse} setAtlasOpen={setAtlasOpen} setTab={setTab} startWalking={startWalking} useDemo={useDemo} />}
       {tab === "mondes" && <WorldsScreen save={save} chooseUniverse={chooseUniverse} />}
       {tab === "journal" && <JournalScreen save={save} activeUniverse={activeUniverse} worldProgress={worldProgress} distanceKm={distanceKm} claimQuest={claimQuest} />}
       {tab === "refuge" && <RefugeScreen save={save} progress={refugeProgress} improve={improveRefuge} />}
@@ -235,24 +272,68 @@ export function GrandPasGameV2() {
 }
 
 type VoyageProps = {
-  save: GameSave; activeUniverse: (typeof UNIVERSES)[number]; worldProgress: GameSave["worldProgress"][UniverseId]; routeProgress: number; dailyProgress: number; isWalking: boolean; sensorMode: SensorMode; nextEvent: (typeof UNIVERSES)[number]["encounters"][number] | undefined; remaining: number; nextLockedUniverse: (typeof UNIVERSES)[number] | undefined; setAtlasOpen: (value: boolean) => void; setTab: (tab: Tab) => void; startWalking: () => void; useDemo: () => void;
+  save: GameSave; activeUniverse: (typeof UNIVERSES)[number]; worldProgress: GameSave["worldProgress"][UniverseId]; routeProgress: number; dailyProgress: number; movementSequence: number; isWalking: boolean; sensorMode: SensorMode; nextEvent: (typeof UNIVERSES)[number]["encounters"][number] | undefined; remaining: number; nextLockedUniverse: (typeof UNIVERSES)[number] | undefined; setAtlasOpen: (value: boolean) => void; setTab: (tab: Tab) => void; startWalking: () => void; useDemo: () => void;
 };
 
-function VoyageScreen({ save, activeUniverse, worldProgress, routeProgress, dailyProgress, isWalking, sensorMode, nextEvent, remaining, nextLockedUniverse, setAtlasOpen, setTab, startWalking, useDemo }: VoyageProps) {
+const RouteLayer = memo(function RouteLayer({ plane, segments, image }: { plane: VisualPlane; segments: readonly VisualSegment[]; image: string }) {
+  return <div className={`world-layer world-layer-${plane}`} aria-hidden="true"><div className="world-layer-track">
+    {segments.map((segment) => {
+      const segmentStyle = {
+        "--segment-crop": `${segment.cropX}%`,
+        "--segment-flip": segment.mirrored ? -1 : 1,
+        "--segment-tone": `${(segment.seed % 13) - 6}deg`,
+        "--layer-variant": segment.layers[plane].variant,
+      } as React.CSSProperties;
+      return <div className={`world-segment variant-${segment.layers[plane].variant} landform-${segment.landform}`} data-segment-id={segment.id} key={`${plane}-${segment.id}`} style={segmentStyle}>
+        <div className="segment-surface" style={plane === "far" ? { backgroundImage: `url(${image})` } : undefined} />
+        {plane === "mid" && segment.landmark ? <span className="landmark-glow" /> : null}
+        {plane === "terrain" ? <span className="seam-ground" data-join={segment.exitJoin.key} /> : null}
+        {plane === "near" ? <><span className={`route-prop join-prop prop-${segment.exitJoin.prop}`} data-join={segment.exitJoin.key} /><span className={`route-prop secondary-prop prop-${segment.secondaryProp}`} /></> : null}
+      </div>;
+    })}
+  </div></div>;
+});
+
+function WorldViewport({ activeUniverse, steps, stepsToday, movementSequence, isTracking }: { activeUniverse: (typeof UNIVERSES)[number]; steps: number; stepsToday: number; movementSequence: number; isTracking: boolean }) {
+  const segments = getWorldRouteSegments(activeUniverse.id);
+  const scene = getRouteSceneState(activeUniverse.id, steps, activeUniverse.routeGoal);
+  const frame = Math.abs(Math.floor(steps)) % 4;
+  const viewportStyle = {
+    "--far-track-shift": `${scene.trackPercent * 0.18}%`,
+    "--mid-track-shift": `${scene.trackPercent * 0.4}%`,
+    "--terrain-track-shift": `${scene.trackPercent * 0.72}%`,
+    "--near-track-shift": `${scene.trackPercent}%`,
+    "--far-parallax": `${scene.parallaxPx.far}px`,
+    "--mid-parallax": `${scene.parallaxPx.mid}px`,
+    "--terrain-parallax": `${scene.parallaxPx.terrain}px`,
+    "--near-parallax": `${scene.parallaxPx.near}px`,
+    "--walker-frame": `${frame * (100 / 3)}%`,
+  } as React.CSSProperties;
+  return <div className={`pixel-world ambient-${activeUniverse.ambient} ${isTracking ? "is-tracking" : ""}`} data-route-segment={scene.segmentIndex + 1} data-route-segments={WORLD_ROUTE_SEGMENT_COUNT} data-step-sequence={movementSequence} style={viewportStyle}>
+    {VISUAL_PLANES.map((plane) => <RouteLayer image={activeUniverse.image} key={plane} plane={plane} segments={segments} />)}
+    <div className="world-grade" />
+    <div className="world-particles" aria-hidden="true">{Array.from({ length: 12 }, (_, index) => <i key={index} />)}</div>
+    <div className={`speed-lines ${movementSequence > 0 ? "step-impulse" : ""}`} key={`speed-${movementSequence}`} />
+    <span className={`walker-sprite ${movementSequence > 0 ? "step-impulse" : ""}`} key={`walker-${movementSequence}`} role="img" aria-label={`Votre exploratrice dans ${activeUniverse.name}`} />
+    <div className={`step-shadow ${movementSequence > 0 ? "step-impulse" : ""}`} key={`shadow-${movementSequence}`} />
+    <div className="segment-indicator" aria-hidden="true">Décor {scene.segmentIndex + 1}<span>/ {WORLD_ROUTE_SEGMENT_COUNT}</span></div>
+    <div className="step-bubble"><Icon name="foot" /><strong>{formatSteps(stepsToday)}</strong><small>pas aujourd’hui</small></div>
+    <div className="world-badge"><small>{activeUniverse.genre} · route vivante</small><strong>{activeUniverse.name}</strong></div>
+  </div>;
+}
+
+function VoyageScreen({ save, activeUniverse, worldProgress, routeProgress, dailyProgress, movementSequence, isWalking, sensorMode, nextEvent, remaining, nextLockedUniverse, setAtlasOpen, setTab, startWalking, useDemo }: VoyageProps) {
   return <div className="screen voyage-screen">
     <section className="hero-copy" aria-labelledby="hero-title"><div className="world-heading-row"><p className="eyebrow"><span /> Chapitre {activeUniverse.chapter}</p><button className="world-switch" onClick={() => setAtlasOpen(true)}><Icon name="compass" /> Changer</button></div><h1 id="hero-title">Sept mondes.<br /><em>Un seul voyage.</em></h1><p>{activeUniverse.description}</p></section>
     <section className="journey-card" aria-label={`Progression de ${activeUniverse.routeName}`}>
       <div className="route-label"><span className="mini-emblem"><Icon name="route" /></span><div><small>{activeUniverse.kicker}</small><strong>{activeUniverse.routeName}</strong></div><span className="weather" role="status" aria-label={`Météo : ${activeUniverse.weather}, ${activeUniverse.temperature}`}>{activeUniverse.weather}<b>{activeUniverse.temperature}</b></span></div>
-      <div className={`pixel-world ambient-${activeUniverse.ambient} ${isWalking ? "is-walking" : ""}`}>
-        <div className="world-panorama world-panorama-far" style={{ backgroundImage: `url(${activeUniverse.image})` }} /><div className="world-panorama world-panorama-near" style={{ backgroundImage: `url(${activeUniverse.image})` }} /><div className="world-grade" /><div className="world-particles" aria-hidden="true">{Array.from({ length: 15 }, (_, index) => <i key={index} />)}</div><div className="foreground-silhouette" /><div className="speed-lines" />
-        <span className="walker-sprite" role="img" aria-label={`Votre exploratrice marche dans ${activeUniverse.name}`} /><div className="step-shadow" /><div className="step-bubble"><Icon name="foot" /><strong>{formatSteps(save.stepsToday)}</strong><small>pas aujourd’hui</small></div><div className="world-badge"><small>{activeUniverse.genre}</small><strong>{activeUniverse.name}</strong></div>
-      </div>
+      <WorldViewport activeUniverse={activeUniverse} isTracking={isWalking} movementSequence={movementSequence} steps={worldProgress.steps} stepsToday={save.stepsToday} />
       <div className="route-progress"><div className="progress-track" role="progressbar" aria-label={`Progression de ${activeUniverse.routeName}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(routeProgress * 100)}><span style={{ width: `${routeProgress * 100}%` }} /></div><div className="milestones">{activeUniverse.milestones.map((milestone, index) => { const at = Math.round((activeUniverse.routeGoal / 3) * index); return <span className={worldProgress.steps >= at ? "passed" : index === Math.floor(routeProgress * 3) ? "current" : ""} key={milestone}><b>{milestone}</b><small>{formatSteps(at)}</small></span>; })}</div></div>
     </section>
     <section className="daily-row" aria-label="Objectif quotidien"><div className="daily-ring"><span><Icon name="flame" /></span></div><div className="daily-copy"><small>OBJECTIF DU JOUR</small><strong>{formatSteps(save.stepsToday)} <span>/ {formatSteps(DAILY_GOAL)} pas</span></strong><div className="thin-progress" role="progressbar" aria-label="Objectif quotidien" aria-valuemin={0} aria-valuemax={DAILY_GOAL} aria-valuenow={Math.min(save.stepsToday, DAILY_GOAL)}><span style={{ width: `${dailyProgress * 100}%` }} /></div></div><div className="streak"><strong>{unlockedCount(save)}</strong><small>mondes ouverts</small></div></section>
     <section className="encounter-teaser"><div className="teaser-icon">{nextEvent?.icon ?? "✦"}</div><div><small>PROCHAINE DÉCOUVERTE</small><strong>{nextEvent?.title.replace("…", "") ?? activeUniverse.landmark}</strong><span>{remaining > 0 ? `Encore ${formatSteps(remaining)} pas` : "Le jalon vous attend"}</span></div><button aria-label="Voir le journal" onClick={() => setTab("journal")}>›</button></section>
     {nextLockedUniverse && <p className="unlock-hint"><Icon name="lock" /> Prochaine brèche : {nextLockedUniverse.name} à {formatSteps(nextLockedUniverse.unlockAt)} pas cumulés.</p>}
-    <div className="walk-actions"><button className={`walk-button ${isWalking ? "active" : ""}`} aria-pressed={isWalking} onClick={startWalking}><span className="walk-icon"><Icon name={isWalking ? "heart" : "foot"} /></span><span><strong>{isWalking ? "Mettre en pause" : "Commencer à marcher"}</strong><small>{sensorMode === "demo" ? "Mode découverte · pas simulés" : "Téléphone en poche · regardez où vous allez"}</small></span>{isWalking ? <span className="live-pill">EN MARCHE</span> : null}</button>{!isWalking ? <button className="demo-link" onClick={useDemo}>Explorer en mode découverte</button> : null}</div>
+    <div className="walk-actions"><button className={`walk-button ${isWalking ? "active" : ""}`} aria-pressed={isWalking} onClick={startWalking}><span className="walk-icon"><Icon name={isWalking ? "heart" : "foot"} /></span><span><strong>{isWalking ? "Mettre en pause" : "Commencer à marcher"}</strong><small>{sensorMode === "demo" ? "Mode découverte · pas simulés" : isWalking ? "Capteur armé · le monde attend vos pas" : "Téléphone en poche · regardez où vous allez"}</small></span>{isWalking ? <span className="live-pill">{sensorMode === "demo" ? "D\u00C9COUVERTE" : "CAPTEUR ACTIF"}</span> : null}</button>{!isWalking ? <button className="demo-link" onClick={useDemo}>Explorer en mode découverte</button> : null}</div>
   </div>;
 }
 

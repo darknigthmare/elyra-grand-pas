@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "test": "npm run test:engine && npm run build && node --test tests/next-runtime.test.mjs",
-    "test:engine": "tsx --test tests/game-engine.test.ts",
+    "test:engine": "tsx --test tests/game-engine.test.ts tests/step-motion.test.ts tests/world-visual.test.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "dev:sites": "vinext dev",

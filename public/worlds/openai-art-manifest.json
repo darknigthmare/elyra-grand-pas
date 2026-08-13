@@ -54,8 +54,8 @@
     {
       "path": "/assets/elyra-walk-cycle.webp",
       "generationRef": "exec-09b1d5b8-12f3-46ce-ab3e-4705c9ce460b.png",
-      "sha256": "7FD8B86D6E7661E026B71846EFF854A62171CA634FB663ADE5E8BAC2D2B30DEC",
-      "promptSummary": "Identity-preserving four-frame right-facing walk cycle from the Elyra avatar, detailed 32-bit pixel art, chroma-key removed locally."
+      "sha256": "881FFFBE6546899E18EF603AFB6F1B37C7BE3AA06DFA43C7F6623F428B3CA1F1",
+      "promptSummary": "Identity-preserving four-frame right-facing walk cycle from the Elyra avatar, detailed 32-bit pixel art, with binary transparency and four poses recentered on 2026-08-13."
     }
   ]
 }
